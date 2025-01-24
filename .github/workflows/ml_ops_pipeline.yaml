@@ -93,13 +93,13 @@ jobs:
           cat response.json
 
           python - <<EOF
-import json
+          import json
 
-# Load the response JSON
-with open("response.json") as f:
-    response = json.load(f)
+          # Load the response JSON
+          with open("response.json") as f:
+              response = json.load(f)
 
-# Assert that the response contains 'predicted_value'
-assert "predicted_value" in response["Housing prediction for given data"], "Test failed: 'predicted_value' not found in the response"
-print("Test passed: 'predicted_value' found in the response")
-EOF
+          # Assert that the response contains 'predicted_value'
+          assert "predicted_value" in response["Housing prediction for given data"], "Test failed: 'predicted_value' not found in the response"
+          print("Test passed: 'predicted_value' found in the response")
+          EOF
