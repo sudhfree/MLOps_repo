@@ -1,4 +1,4 @@
 [core]
-    remote = local-remote
-['remote "local-remote"']
+    remote = local-repo
+['remote "local-repo"']
     url = ../dvc-remote

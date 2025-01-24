@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO,
 app = Flask(__name__)
 
 # Load the pre-trained model
-model_path = './model/best_gradient_boosting_model.pkl'
+model_path = '../model/best_gradient_boosting_model.pkl'
 model = joblib.load(model_path)
 
 # Define the expected features, ensuring compatibility with the model
