@@ -1,1 +1,6 @@
 data/housing.csv
+src/mlartifacts
+src/mlruns
+dvc-remote
+src/code/mlruns
+src/code/mlartifacts
