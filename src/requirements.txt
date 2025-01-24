@@ -1,6 +1,0 @@
-flask
-scikit-learn
-joblib
-flake8
-pytest
-pandas

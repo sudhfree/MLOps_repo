@@ -1,0 +1,7 @@
+flask
+scikit-learn==1.6.1
+joblib==1.4.2
+flake8
+pytest
+pandas
+mlflow==2.20.0

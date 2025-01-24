@@ -1,34 +1,106 @@
-name: Deploy EKS using Terraform
+name: Python Linting and Model Testing Pipeline
 
 on:
   push:
     branches:
+      - develop
       - main
+  pull_request:
 
 jobs:
-  terraform:
-    name: Terraform Workflow
+  linting:
+    name: Linting Python Code
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
-      with:
-        terraform_version: 1.5.0
-        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11.9'
 
-    - name: Terraform Init
-      run: terraform -chdir=terraform init
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+        working-directory: src/code
 
-    - name: Terraform Plan
-      run: terraform -chdir=terraform plan
+      # Run linting
+      - name: Run flake8
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        working-directory: src/code
 
-    - name: Terraform Apply
-      run: terraform -chdir=terraform apply -auto-approve
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_DEFAULT_REGION: us-west-2
+  testing:
+    name: Testing Exported Model
+    runs-on: ubuntu-latest
+    needs: linting
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11.9'
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        working-directory: src/code
+
+      # Start the Flask application
+      - name: Start Flask Application
+        run: |
+          nohup python app.py &
+        shell: bash
+        working-directory: src/code
+
+      # Wait for the Flask app to start
+      - name: Wait for Flask App
+        run: sleep 10
+
+      # Test the model with sample JSON input
+      - name: Test the exported model
+        run: |
+          curl -X POST http://127.0.0.1:5000/predict \
+          -H "Content-Type: application/json" \
+          -d '{
+            "features": {
+              "longitude": -122.23,
+              "latitude": 37.88,
+              "housing_median_age": 41.0,
+              "total_rooms": 880.0,
+              "total_bedrooms": 129.0,
+              "population": 322.0,
+              "households": 126.0,
+              "median_income": 8.3252,
+              "ocean_proximity_INLAND": 1,
+              "ocean_proximity_ISLAND": 0,
+              "ocean_proximity_NEAR BAY": 0,
+              "ocean_proximity_NEAR OCEAN": 0
+            }
+          }' -o response.json
+
+          cat response.json
+
+          python - <<EOF
+          import json
+
+          # Load the response JSON
+          with open("response.json") as f:
+              response = json.load(f)
+
+          # Assert that the response contains 'predicted_value'
+          assert "predicted_value" in response["Housing prediction for given data"], "Test failed: 'predicted_value' not found in the response"
+          print("Test passed: 'predicted_value' found in the response")
+          EOF
